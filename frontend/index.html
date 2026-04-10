@@ -1,48 +1,164 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Plagiarism Detector</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
+    <div class="page-shell">
+        <div class="ambient ambient-one"></div>
+        <div class="ambient ambient-two"></div>
 
-<h1>Plagiarism Checker</h1>
+        <main class="app-card">
+            <section class="hero">
+                <p class="eyebrow">Academic Integrity Suite</p>
+                <h1>Professional plagiarism analysis for side-by-side document review</h1>
+                <p class="hero-copy">
+                    Upload two documents, run an instant comparison, and review similarity signals in a clean,
+                    presentation-ready workspace.
+                </p>
 
-<form id="form">
-    <input type="file" name="file1" required><br><br>
-    <input type="file" name="file2" required><br><br>
-    <button type="submit">Check</button>
-</form>
+                <div class="hero-stats">
+                    <div class="stat">
+                        <span class="stat-label">Analysis Mode</span>
+                        <strong>Pairwise Comparison</strong>
+                    </div>
+                    <div class="stat">
+                        <span class="stat-label">Output</span>
+                        <strong>Score + Matched Patterns</strong>
+                    </div>
+                    <div class="stat">
+                        <span class="stat-label">Workflow</span>
+                        <strong>Fast and Secure</strong>
+                    </div>
+                </div>
+            </section>
 
-<h2 id="result"></h2>
-<ul id="patterns"></ul>
+            <section class="workspace">
+                <form id="form" class="panel upload-panel">
+                    <div class="panel-heading">
+                        <div>
+                            <p class="section-kicker">Upload Documents</p>
+                            <h2>Compare two files</h2>
+                        </div>
+                        <span class="badge">Ready</span>
+                    </div>
 
-<script>
-document.getElementById("form").addEventListener("submit", async function(e) {
-    e.preventDefault();
+                    <div class="upload-grid">
+                        <label class="file-card">
+                            <span class="file-card-label">Primary document</span>
+                            <span class="file-card-hint">Choose the source or original file.</span>
+                            <input id="file1" type="file" name="file1" required>
+                            <span class="file-name" data-target="file1">No file selected</span>
+                        </label>
 
-    const formData = new FormData(this);
+                        <label class="file-card">
+                            <span class="file-card-label">Comparison document</span>
+                            <span class="file-card-hint">Choose the file to evaluate against it.</span>
+                            <input id="file2" type="file" name="file2" required>
+                            <span class="file-name" data-target="file2">No file selected</span>
+                        </label>
+                    </div>
 
-    const res = await fetch('/compare', {
-        method: 'POST',
-        body: formData
+                    <div class="form-footer">
+                        <p id="status" class="status-text">Select two files to start the analysis.</p>
+                        <button id="submitButton" type="submit">Run analysis</button>
+                    </div>
+                </form>
+
+                <section class="panel result-panel">
+                    <div class="panel-heading">
+                        <div>
+                            <p class="section-kicker">Results Overview</p>
+                            <h2>Similarity summary</h2>
+                        </div>
+                    </div>
+
+                    <div class="score-card">
+                        <span class="score-label">Similarity score</span>
+                        <strong id="result">Awaiting analysis</strong>
+                        <p class="score-note">The percentage indicates detected similarity between the uploaded files.</p>
+                    </div>
+
+                    <div class="patterns-block">
+                        <div class="patterns-header">
+                            <h3>Matched patterns</h3>
+                            <span id="patternCount" class="pattern-count">0 items</span>
+                        </div>
+                        <ul id="patterns" class="patterns-list">
+                            <li class="empty-state">Detected matches will appear here after analysis.</li>
+                        </ul>
+                    </div>
+                </section>
+            </section>
+        </main>
+    </div>
+
+    <script>
+    const form = document.getElementById("form");
+    const result = document.getElementById("result");
+    const patterns = document.getElementById("patterns");
+    const patternCount = document.getElementById("patternCount");
+    const statusText = document.getElementById("status");
+    const submitButton = document.getElementById("submitButton");
+
+    function updateFileName(inputId) {
+        const input = document.getElementById(inputId);
+        const fileName = document.querySelector(`[data-target="${inputId}"]`);
+        fileName.textContent = input.files.length ? input.files[0].name : "No file selected";
+    }
+
+    ["file1", "file2"].forEach((inputId) => {
+        document.getElementById(inputId).addEventListener("change", () => updateFileName(inputId));
     });
 
-    const data = await res.json();
+    form.addEventListener("submit", async function(e) {
+        e.preventDefault();
 
-    document.getElementById("result").innerText = 
-        "Similarity: " + data.similarity.toFixed(2) + "%";
+        const formData = new FormData(this);
+        statusText.textContent = "Running plagiarism analysis...";
+        submitButton.disabled = true;
+        result.textContent = "Analyzing...";
+        patternCount.textContent = "Pending";
+        patterns.innerHTML = '<li class="empty-state">Please wait while the documents are compared.</li>';
 
-    const list = document.getElementById("patterns");
-    list.innerHTML = "";
+        try {
+            const res = await fetch("/compare", {
+                method: "POST",
+                body: formData
+            });
 
-    data.patterns.forEach(p => {
-        let li = document.createElement("li");
-        li.innerText = p;
-        list.appendChild(li);
+            const data = await res.json();
+            const similarity = Number(data.similarity || 0);
+            const matches = Array.isArray(data.patterns) ? data.patterns : [];
+
+            result.textContent = similarity.toFixed(2) + "%";
+            patternCount.textContent = matches.length + (matches.length === 1 ? " item" : " items");
+            statusText.textContent = "Analysis completed successfully.";
+
+            patterns.innerHTML = "";
+
+            if (!matches.length) {
+                patterns.innerHTML = '<li class="empty-state">No matching patterns were returned for this comparison.</li>';
+                return;
+            }
+
+            matches.forEach((pattern) => {
+                const item = document.createElement("li");
+                item.textContent = pattern;
+                patterns.appendChild(item);
+            });
+        } catch (error) {
+            result.textContent = "Analysis failed";
+            patternCount.textContent = "0 items";
+            patterns.innerHTML = '<li class="empty-state">We could not complete the comparison. Please try again.</li>';
+            statusText.textContent = "The request failed. Check the server and try once more.";
+        } finally {
+            submitButton.disabled = false;
+        }
     });
-});
-</script>
-
+    </script>
 </body>
 </html>
