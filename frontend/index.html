@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -11,6 +11,10 @@
         <div class="ambient ambient-one"></div>
         <div class="ambient ambient-two"></div>
         <main class="app-card">
+            <button id="themeToggle" class="theme-toggle" aria-label="Toggle theme">
+                <svg class="sun-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg>
+                <svg class="moon-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>
+            </button>
             <section class="hero">
                 <p class="eyebrow">Academic Integrity Suite</p>
                 <h1>plagiarism analysis engine</h1>
@@ -90,6 +94,12 @@
     const patternCount = document.getElementById("patternCount");
     const statusText = document.getElementById("status");
     const submitButton = document.getElementById("submitButton");
+    const themeToggle = document.getElementById("themeToggle");
+    const htmlElement = document.documentElement;
+    themeToggle.addEventListener("click", () => {
+        const currentTheme = htmlElement.getAttribute("data-theme");
+        htmlElement.setAttribute("data-theme", currentTheme === "dark" ? "light" : "dark");
+    });
     function updateFileName(inputId) {
         const input = document.getElementById(inputId);
         const fileName = document.querySelector(`[data-target="${inputId}"]`);
