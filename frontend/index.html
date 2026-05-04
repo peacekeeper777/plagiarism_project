@@ -10,92 +10,79 @@
     <div class="page-shell">
         <div class="ambient ambient-one"></div>
         <div class="ambient ambient-two"></div>
-
         <main class="app-card">
             <section class="hero">
                 <p class="eyebrow">Academic Integrity Suite</p>
-                <h1>plagiarism analysis for side-by-side document review</h1>
-                <p class="hero-copy">
-                    Upload two documents, run an instant comparison, and review similarity signals in a clean,
-                    presentation-ready workspace.
-                </p>
-
+                <h1>plagiarism analysis engine</h1>
+                <p class="hero-copy">Upload two documents to run an advanced Dynamic Programming and N-Gram based similarity analysis.</p>
                 <div class="hero-stats">
                     <div class="stat">
-                        <span class="stat-label">Analysis Mode</span>
-                        <strong>Pairwise Comparison</strong>
+                        <span class="stat-label">Analysis</span>
+                        <strong>LCS & Jaccard</strong>
                     </div>
                     <div class="stat">
                         <span class="stat-label">Output</span>
-                        <strong>Score + Matched Patterns</strong>
+                        <strong>Similarity Score</strong>
                     </div>
                     <div class="stat">
-                        <span class="stat-label">Workflow</span>
-                        <strong>Fast and Secure</strong>
+                        <span class="stat-label">Engine</span>
+                        <strong>C++ Powered</strong>
                     </div>
                 </div>
             </section>
-
             <section class="workspace">
                 <form id="form" class="panel upload-panel">
                     <div class="panel-heading">
                         <div>
-                            <p class="section-kicker">Upload Documents</p>
-                            <h2>Compare two files</h2>
+                            <p class="section-kicker">Input Documents</p>
+                            <h2>Select Files</h2>
                         </div>
                         <span class="badge">Ready</span>
                     </div>
-
                     <div class="upload-grid">
                         <label class="file-card">
-                            <span class="file-card-label">Primary document</span>
-                            <span class="file-card-hint">Choose the source or original file.</span>
+                            <span class="file-card-label">Source File</span>
+                            <span class="file-card-hint">The original document.</span>
                             <input id="file1" type="file" name="file1" required>
-                            <span class="file-name" data-target="file1">No file selected</span>
+                            <span class="file-name" data-target="file1">None</span>
                         </label>
-
                         <label class="file-card">
-                            <span class="file-card-label">Comparison document</span>
-                            <span class="file-card-hint">Choose the file to evaluate against it.</span>
+                            <span class="file-card-label">Target File</span>
+                            <span class="file-card-hint">The document to check.</span>
                             <input id="file2" type="file" name="file2" required>
-                            <span class="file-name" data-target="file2">No file selected</span>
+                            <span class="file-name" data-target="file2">None</span>
                         </label>
                     </div>
-
                     <div class="form-footer">
-                        <p id="status" class="status-text">Select two files to start the analysis.</p>
-                        <button id="submitButton" type="submit">Run analysis</button>
+                        <p id="status" class="status-text">Awaiting files...</p>
+                        <button id="submitButton" type="submit">Execute Analysis</button>
                     </div>
                 </form>
-
                 <section class="panel result-panel">
                     <div class="panel-heading">
                         <div>
-                            <p class="section-kicker">Results Overview</p>
-                            <h2>Similarity summary</h2>
+                            <p class="section-kicker">Results</p>
+                            <h2>Similarity Report</h2>
                         </div>
                     </div>
-
                     <div class="score-card">
-                        <span class="score-label">Similarity score</span>
-                        <strong id="result">Awaiting analysis</strong>
-                        <p class="score-note">The percentage indicates detected similarity between the uploaded files.</p>
+                        <span class="score-label">Final Match Score</span>
+                        <strong id="result">0.00%</strong>
+                        <p class="score-note">Combined weighted score using structural and vocabulary analysis.</p>
                     </div>
-
                     <div class="patterns-block">
                         <div class="patterns-header">
-                            <h3>Matched patterns</h3>
+                            <h3>Identical Patterns</h3>
                             <span id="patternCount" class="pattern-count">0 items</span>
                         </div>
                         <ul id="patterns" class="patterns-list">
-                            <li class="empty-state">Detected matches will appear here after analysis.</li>
+                            <li class="empty-state">Run analysis to see matched sequences.</li>
                         </ul>
                     </div>
                 </section>
             </section>
         </main>
     </div>
-
     <script>
     const form = document.getElementById("form");
     const result = document.getElementById("result");
@@ -103,58 +90,48 @@
     const patternCount = document.getElementById("patternCount");
     const statusText = document.getElementById("status");
     const submitButton = document.getElementById("submitButton");
-
     function updateFileName(inputId) {
         const input = document.getElementById(inputId);
         const fileName = document.querySelector(`[data-target="${inputId}"]`);
-        fileName.textContent = input.files.length ? input.files[0].name : "No file selected";
+        fileName.textContent = input.files.length ? input.files[0].name : "None";
     }
-
     ["file1", "file2"].forEach((inputId) => {
         document.getElementById(inputId).addEventListener("change", () => updateFileName(inputId));
     });
-
     form.addEventListener("submit", async function(e) {
         e.preventDefault();
-
         const formData = new FormData(this);
-        statusText.textContent = "Running plagiarism analysis...";
+        statusText.textContent = "Processing via C++ Engine...";
         submitButton.disabled = true;
         result.textContent = "Analyzing...";
         patternCount.textContent = "Pending";
-        patterns.innerHTML = '<li class="empty-state">Please wait while the documents are compared.</li>';
-
+        patterns.innerHTML = '<li class="empty-state">Extracting sequences...</li>';
         try {
             const res = await fetch("/compare", {
                 method: "POST",
                 body: formData
             });
-
             const data = await res.json();
             const similarity = Number(data.similarity || 0);
             const matches = Array.isArray(data.patterns) ? data.patterns : [];
-
             result.textContent = similarity.toFixed(2) + "%";
-            patternCount.textContent = matches.length + (matches.length === 1 ? " item" : " items");
-            statusText.textContent = "Analysis completed successfully.";
-
+            patternCount.textContent = matches.length + " found";
+            statusText.textContent = "Analysis complete.";
             patterns.innerHTML = "";
-
             if (!matches.length) {
-                patterns.innerHTML = '<li class="empty-state">No matching patterns were returned for this comparison.</li>';
+                patterns.innerHTML = '<li class="empty-state">No matching patterns found.</li>';
                 return;
             }
-
             matches.forEach((pattern) => {
                 const item = document.createElement("li");
                 item.textContent = pattern;
                 patterns.appendChild(item);
             });
         } catch (error) {
-            result.textContent = "Analysis failed";
+            result.textContent = "Error";
             patternCount.textContent = "0 items";
-            patterns.innerHTML = '<li class="empty-state">We could not complete the comparison. Please try again.</li>';
-            statusText.textContent = "The request failed. Check the server and try once more.";
+            patterns.innerHTML = '<li class="empty-state">Engine failure.</li>';
+            statusText.textContent = "System error during execution.";
         } finally {
             submitButton.disabled = false;
         }
